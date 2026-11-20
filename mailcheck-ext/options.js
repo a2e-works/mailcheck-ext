@@ -1,12 +1,13 @@
 var t = document.getElementById('t'), p = document.getElementById('p'), lk = document.getElementById('lk');
 function domOk(s) { return /^[a-z0-9.\-]+\.[a-z]{2,}$/.test(s); }
+function addrOk(s) { return /^[a-z0-9._%+\-=']+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(s); }
 chrome.storage.sync.get({ trusted: [], partners: [], lockLinks: true }, function (r) {
   lk.checked = r.lockLinks !== false;
   t.value = (r.trusted || []).join('\n');
   p.value = (r.partners || []).map(function (x) { return [x.name].concat(x.domains).join(','); }).join('\n');
 });
 document.getElementById('save').addEventListener('click', function () {
-  var list = t.value.split(/\s+/).map(function (s) { return s.trim().toLowerCase().replace(/^@/, ''); }).filter(domOk);
+  var list = t.value.split(/\s+/).map(function (s) { return s.trim().toLowerCase().replace(/^@/, ''); }).filter(function (s) { return domOk(s) || addrOk(s); });
   var partners = p.value.split(/\n/).map(function (line) {
     var a = line.split(/[,、，]/).map(function (s) { return s.trim(); }).filter(Boolean);
     if (a.length < 2) return null;

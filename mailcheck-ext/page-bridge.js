@@ -1,10 +1,11 @@
 // ページ側（MAINワールド）で動く小さなスクリプト。
-// Gmailの内部ID（ik）を拡張機能側へ渡すだけで、それ以外は何もしない。
+// Gmailの内部ID（ik）と、開いているアカウントのアドレスを拡張機能側へ渡すだけで、それ以外は何もしない。
 (function () {
   function send() {
     try {
       var ik = window.GLOBALS && window.GLOBALS[9];
-      if (ik) window.postMessage({ __mailcheck: true, ik: String(ik) }, location.origin);
+      var me = window.GLOBALS && window.GLOBALS[10];
+      if (ik) window.postMessage({ __mailcheck: true, ik: String(ik), me: typeof me === 'string' ? me : '' }, location.origin);
     } catch (e) {}
   }
   send();

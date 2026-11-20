@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "メール公式チェッカー（Gmail用）",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Gmailで開いたメールが公式の送信元からのものかを、送信元認証・ドメイン・リンクから判定して表示します。解析はすべてブラウザ内で行い、外部に送信しません。",
   "permissions": ["storage"],
   "options_page": "options.html",

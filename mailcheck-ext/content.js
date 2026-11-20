@@ -2,13 +2,17 @@
 (function () {
   'use strict';
   var IK = null;
+  var ME = '';   // 開いているGmailアカウントのアドレス（自分あてメールの判定用）
   var trusted = [];
   var partners = [];
   var lockOn = true;   // 本文のリンクをロックする（オプションで切り替え）
   var cache = {};
 
   window.addEventListener('message', function (e) {
-    if ((e.source === window || e.origin === location.origin) && e.data && e.data.__mailcheck && e.data.ik) IK = e.data.ik;
+    if ((e.source === window || e.origin === location.origin) && e.data && e.data.__mailcheck && e.data.ik) {
+      IK = e.data.ik;
+      if (e.data.me && /@/.test(e.data.me)) ME = String(e.data.me).toLowerCase();
+    }
   });
   function loadTrusted() {
     try { chrome.storage.sync.get({ trusted: [], partners: [], lockLinks: true }, function (r) { trusted = r.trusted || []; partners = r.partners || []; lockOn = r.lockLinks !== false; }); } catch (e) {}
@@ -50,6 +54,13 @@
   try { chrome.storage.onChanged.addListener(function () { loadTrusted(); }); } catch (e) {}
 
   function lcEmail(s) { return (s || '').trim().toLowerCase(); }
+  function myAddresses() {
+    var a = [];
+    if (ME) a.push(ME);
+    var m = (document.title || '').match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);
+    if (m) a.push(m[0].toLowerCase());
+    return a;
+  }
   function accountIndex() { var m = location.pathname.match(/\/mail\/u\/(\d+)/); return m ? m[1] : '0'; }
 
   function waitIk(ms) {
@@ -121,15 +132,18 @@
     if (result.level === 'danger') list.appendChild(el('li', 'mailcheck-r-info', '・リンクは開かず、公式アプリやブックマークから自分でログインして確認してください'));
     if (result.trustable) {
       var li = el('li', 'mailcheck-r-info');
-      var btn = el('button', 'mailcheck-trust', '「' + result.fromDomain + '」を信頼済みにする（公式と確認できた場合のみ）');
+      var target = result.trustTarget || result.fromDomain;
+      var isAddr = target.indexOf('@') >= 0;
+      var btn = el('button', 'mailcheck-trust', '「' + target + '」を信頼済みにする（' + (isAddr ? '本人と確認できた場合のみ' : '公式と確認できた場合のみ') + '）');
       btn.addEventListener('click', function () {
         var q = result.level === 'danger'
           ? '「' + result.fromDomain + '」は公式ドメインに似せた形のため「危険」と判定しています。\n会社の公式サイト（メールのリンクではなく、自分で開いたページ）で、このドメインが本物だと確認できましたか？\n確認できた場合だけ「OK」を押してください。'
-          : '「' + result.fromDomain + '」を信頼済みドメインに追加します。公式サイトなどで本物と確認できましたか？';
+          : isAddr ? '「' + target + '」を信頼済みアドレスに追加します（このアドレスだけが対象です）。送り主本人のアドレスだと確認できましたか？'
+          : '「' + target + '」を信頼済みドメインに追加します。公式サイトなどで本物と確認できましたか？';
         if (!confirm(q)) return;
         chrome.storage.sync.get({ trusted: [] }, function (r) {
           var t = r.trusted || [];
-          if (t.indexOf(result.fromDomain) < 0) t.push(result.fromDomain);
+          if (t.indexOf(target) < 0) t.push(target);
           chrome.storage.sync.set({ trusted: t }, function () { btn.textContent = '追加しました（再表示で反映）'; btn.disabled = true; });
         });
       });
@@ -264,7 +278,8 @@
       bodyText: (body.innerText || body.textContent || '').slice(0, 8000),
       trusted: trusted,
       partners: partners,
-      verifiedSender: hasVerifiedMark(container)
+      verifiedSender: hasVerifiedMark(container),
+      myAddresses: myAddresses()
     };
     base.replyHistory = await getReplyHist(lcEmail(base.fromEmail));
     // まず見た目の情報で即時表示 → ヘッダーが取れたら差し替え
