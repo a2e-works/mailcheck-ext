@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "メール公式チェッカー（Gmail用）",
+  "version": "0.7.1",
+  "description": "Gmailで開いたメールが公式の送信元からのものかを、送信元認証・ドメイン・リンクから判定して表示します。解析はすべてブラウザ内で行い、外部に送信しません。",
+  "permissions": ["storage"],
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["page-bridge.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["domains.js", "analyzer.js", "content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
