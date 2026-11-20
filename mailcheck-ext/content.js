@@ -78,7 +78,7 @@
 
   // 「メッセージのソースを表示」と同じページを同じGmailの中から読み込む（外部には送らない）
   async function fetchRaw(msgId, legacyId) {
-    var ik = await waitIk(3000);
+    var ik = await waitIk(6000);
     if (!ik) return null;
     var u = accountIndex();
     var urls = [];
@@ -112,7 +112,7 @@
   function render(container, body, result, fromAuthSource) {
     var old = container.querySelector('.mailcheck-banner');
     if (old) old.remove();
-    var icon = { safe: '🟢', caution: '🟡', danger: '🔴' }[result.level] || '⚪';
+    var icon = { safe: '🟢', caution: '🟡', danger: '🔴', pending: '⏳' }[result.level] || '⚪';
     var box = el('div', 'mailcheck-banner mailcheck-' + result.level);
     var head = el('div', 'mailcheck-head');
     head.appendChild(el('span', 'mailcheck-title', icon + ' ' + result.title));
@@ -128,7 +128,7 @@
       var mark = { ok: '✔', danger: '✖', caution: '！', info: '・' }[r.level] || '・';
       list.appendChild(el('li', 'mailcheck-r-' + r.level, mark + ' ' + r.text));
     });
-    if (!fromAuthSource) list.appendChild(el('li', 'mailcheck-r-info', '・認証情報なしの簡易判定です（ページを再読み込みすると取得できる場合があります）'));
+    if (!fromAuthSource && result.level !== 'pending') list.appendChild(el('li', 'mailcheck-r-info', '・認証情報なしの簡易判定です（ページを再読み込みすると取得できる場合があります）'));
     if (result.level === 'danger') list.appendChild(el('li', 'mailcheck-r-info', '・リンクは開かず、公式アプリやブックマークから自分でログインして確認してください'));
     if (result.trustable) {
       var li = el('li', 'mailcheck-r-info');
@@ -149,8 +149,9 @@
       });
       li.appendChild(btn); list.appendChild(li);
     }
-    list.style.display = result.level === 'safe' ? 'none' : 'block';
-    toggle.textContent = result.level === 'safe' ? '理由を見る' : '閉じる';
+    var folded = result.level === 'safe' || result.level === 'pending';
+    list.style.display = folded ? 'none' : 'block';
+    toggle.textContent = folded ? '理由を見る' : '閉じる';
     toggle.addEventListener('click', function () {
       var open = list.style.display !== 'none';
       list.style.display = open ? 'none' : 'block';
@@ -282,11 +283,24 @@
       myAddresses: myAddresses()
     };
     base.replyHistory = await getReplyHist(lcEmail(base.fromEmail));
-    // まず見た目の情報で即時表示 → ヘッダーが取れたら差し替え
-    render(container, body, MailCheck.analyze(base), false);
-    if (lockOn) { lockLinks(container, body); renderLockBar(container, body); }
+    // まず見た目の情報で即時表示 → ヘッダーが取れたら差し替え。
+    // 見た目だけで「危険」なら、すぐにそれを出す。それ以外は「確認中」にして、認証の結果を待つ
+    // （Gmailを開いた直後は内部IDの準備が間に合わず、認証情報の取得に失敗しやすいため）。
+    var quick = MailCheck.analyze(base);
     var raw = cache[ids.key];
-    if (raw === undefined) { raw = await fetchRaw(ids.msgId, ids.legacyId); cache[ids.key] = raw; }
+    if (quick.level === 'danger' || raw) render(container, body, quick, false);
+    else render(container, body, { level: 'pending', title: '送信元の認証を確認しています…', reasons: quick.reasons }, false);
+    if (lockOn) { lockLinks(container, body); renderLockBar(container, body); }
+    if (!raw) {
+      var waits = [0, 1500, 4000];
+      for (var w = 0; w < waits.length && !raw; w++) {
+        if (waits[w]) await new Promise(function (r) { setTimeout(r, waits[w]); });
+        if (!document.contains(container)) return;
+        raw = await fetchRaw(ids.msgId, ids.legacyId);
+      }
+      if (raw) cache[ids.key] = raw;   // 失敗は覚えない（次に開いたときにもう一度取りにいく）
+    }
+    if (!raw) { render(container, body, quick, false); return; }
     if (raw) {
       var full = Object.assign({}, base, { raw: raw });
       var res = MailCheck.analyze(full);

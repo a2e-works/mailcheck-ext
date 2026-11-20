@@ -1,6 +1,7 @@
 .mailcheck-banner{margin:8px 0 12px;padding:10px 12px;border-radius:8px;font:14px/1.6 "Hiragino Sans","Meiryo",sans-serif;border:1px solid;}
 .mailcheck-safe{background:#e8f5e9;border-color:#81c784;color:#1b5e20;}
 .mailcheck-caution{background:#fff8e1;border-color:#ffca28;color:#5d4300;}
+.mailcheck-pending{background:#f1f3f4;border-color:#c4c7c5;color:#3c4043;}
 .mailcheck-danger{background:#ffebee;border-color:#e57373;color:#8b1a1a;}
 .mailcheck-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .mailcheck-title{font-weight:bold;}
