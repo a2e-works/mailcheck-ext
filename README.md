@@ -12,7 +12,9 @@ Gmailで開いたメールが、本当に公式の送信元から届いたもの
 
 ## ダウンロード
 
-[最新版をダウンロード（zip）](https://github.com/a2e-works/mailcheck-ext/releases/latest/download/mailcheck-ext.zip)
+[最新版をダウンロード（zip）](https://github.com/a2e-works/mailcheck-ext/releases/latest/download/mailcheck-ext.zip)　現在の最新版：**v0.8.1**（2026年11月21日）
+
+過去の版と変更内容は [Releases](https://github.com/a2e-works/mailcheck-ext/releases) にあります。
 
 詳しい説明・入れ方・限界は、公式ページをご覧ください：
 https://a2e-works.github.io/mailcheck.html
